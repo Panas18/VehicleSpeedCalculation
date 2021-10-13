@@ -10,6 +10,7 @@ AREA = 60
 ROI = (238, 400, 173, 461, 117, 172)  # (x1, x2, x3, x4, y1, y2)
 tracker = EuclideanDistanceTracker()
 
+
 def background_sub(img, kernel, fgbg):
     fgmask = fgbg.apply(img)
     fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
@@ -34,7 +35,7 @@ def calculate_fps(new_frame_time, prev_frame_time):
 def bounding_box(fgmask, img):
     centers = []
     contours, _ = cv2.findContours(
-            fgmask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        fgmask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     for cnt in contours:
         area = cv2.contourArea(cnt)
         if area > AREA:
@@ -46,7 +47,7 @@ def bounding_box(fgmask, img):
     return centers
 
 
-def roi_center(img, roi, centers):
+def roi_calc(img, roi, centers):
     x1, x2, x3, x4,  y1, y2 = roi
     inside_roi = []
     for center in centers:
@@ -55,21 +56,30 @@ def roi_center(img, roi, centers):
             inside_roi.append(center)
     return inside_roi
 
+
 if __name__ == "__main__":
     new_frame_time, prev_frame_time = (0, 0)
     cap = cv2.VideoCapture(VIDEO)
 
     while True:
         new_frame_time, prev_frame_time = calculate_fps(
-                new_frame_time, prev_frame_time)
+            new_frame_time, prev_frame_time)
         _, img = cap.read()
         if type(img) == type(None):
             break
         fgmask = background_sub(img, KERNEL, FGBG)
+        cv2.imshow("fgmask", fgmask)
         create_lines(img, ROI)
         centers = bounding_box(fgmask, img)
-        centers=roi_center(img, ROI, centers)
-        tracker.update(centers)
+        centers = roi_calc(img, ROI, centers)
+        center_ids = tracker.update(centers)
+        if center_ids:
+            print(center_ids)
+            for center_id in center_ids:
+                pos = (center_id[0], center_id[1])
+                id = str(center_id[2])
+                cv2.putText(img, id, pos, cv2.FONT_HERSHEY_COMPLEX,
+                            3, (255, 0, 0))
         cv2.imshow("img", img)
         key = cv2.waitKey(27)
         if key == 27:
