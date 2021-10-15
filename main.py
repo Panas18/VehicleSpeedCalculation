@@ -1,6 +1,8 @@
 import cv2
 import time
 from tracker import EuclideanDistanceTracker
+import sys
+
 
 VIDEO = 'highway.mp4'
 KERNEL = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
@@ -8,6 +10,7 @@ FGBG = cv2.createBackgroundSubtractorKNN()
 AREA = 80
 ROI = (238, 400, 173, 461, 117, 172)  # (x1, x2, x3, x4, y1, y2)
 tracker = EuclideanDistanceTracker()
+REQ_TIME = 1/29.97
 
 
 def background_sub(img, kernel, fgbg):
@@ -23,10 +26,6 @@ def create_lines(img, roi):
 
 
 def calculate_fps(new_frame_time, prev_frame_time):
-    new_frame_time = time.time()
-    time_taken = new_frame_time - prev_frame_time
-    prev_frame_time = new_frame_time
-    fps = 1/time_taken
     # print(f"FPS: {fps}")
     return new_frame_time, prev_frame_time
 
@@ -51,7 +50,7 @@ def roi_calc(img, roi, centers):
     inside_roi = []
     for center in centers:
         if (center[1] >= y1 and center[1] <= y2) and (center[0] >= x3 and center[0] <= x4):
-            cv2.circle((img), center, 5, (255, 0, 0), cv2.FILLED)
+            #cv2.circle((img), center, 5, (255, 0, 0), cv2.FILLED)
             inside_roi.append(center)
     return inside_roi
 
@@ -59,29 +58,42 @@ def roi_calc(img, roi, centers):
 if __name__ == "__main__":
     new_frame_time, prev_frame_time = (0, 0)
     cap = cv2.VideoCapture(VIDEO)
-
+    fps_list = []
     while True:
-        new_frame_time, prev_frame_time = calculate_fps(
-            new_frame_time, prev_frame_time)
+        prev_frame_time = time.time()
         _, img = cap.read()
         if type(img) == type(None):
             break
         fgmask = background_sub(img, KERNEL, FGBG)
         #cv2.imshow("fgmask", fgmask)
-        create_lines(img, ROI)
+        #create_lines(img, ROI)
         centers = bounding_box(fgmask, img)
         roi_centers = roi_calc(img, ROI, centers)
-        center_ids = tracker.update(roi_centers)
-        if center_ids:
-            #print(center_ids)
-            for center_id in center_ids:
-                pos = (center_id[0], center_id[1])
-                id = str(center_id[2])
-                cv2.putText(img, id, pos, cv2.FONT_HERSHEY_COMPLEX,
-                            3, (255, 0, 0))
+        center_ids = tracker.update(roi_centers, img)
+        # if center_ids:
+        #    # print(center_ids)
+        #    for center_id in center_ids:
+        #        pos = (center_id[0], center_id[1])
+        #        id = str(center_id[2])
+        #        cv2.putText(img, id, pos, cv2.FONT_HERSHEY_COMPLEX,
+        #                    3, (255, 0, 0))
         cv2.imshow("img", img)
+
+        """ 
+        calculate fps
+        """
+        new_frame_time = time.time()
+        time_taken = new_frame_time - prev_frame_time
+        if time_taken < REQ_TIME:
+            diff = REQ_TIME - time_taken
+            time.sleep(diff)
+        final_time = time.time()
+        #print(f"fps:{1/(final_time- prev_frame_time)}")
+        fps_list.append(1/(final_time - prev_frame_time))
         key = cv2.waitKey(0)
         if key == 27:
             break
+    avg_fps = sum(fps_list)/len(fps_list)
+    print(f"Average fps :{avg_fps}")
     cap.release()
     cv2.destroyAllWindows()
