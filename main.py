@@ -2,11 +2,10 @@ import cv2
 import time
 from tracker import EuclideanDistanceTracker
 
-
 VIDEO = 'highway.mp4'
 KERNEL = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
 FGBG = cv2.createBackgroundSubtractorKNN()
-AREA = 60
+AREA = 80
 ROI = (238, 400, 173, 461, 117, 172)  # (x1, x2, x3, x4, y1, y2)
 tracker = EuclideanDistanceTracker()
 
@@ -68,22 +67,21 @@ if __name__ == "__main__":
         if type(img) == type(None):
             break
         fgmask = background_sub(img, KERNEL, FGBG)
-        cv2.imshow("fgmask", fgmask)
+        #cv2.imshow("fgmask", fgmask)
         create_lines(img, ROI)
         centers = bounding_box(fgmask, img)
-        centers = roi_calc(img, ROI, centers)
-        center_ids = tracker.update(centers)
+        roi_centers = roi_calc(img, ROI, centers)
+        center_ids = tracker.update(roi_centers)
         if center_ids:
-            print(center_ids)
+            #print(center_ids)
             for center_id in center_ids:
                 pos = (center_id[0], center_id[1])
                 id = str(center_id[2])
                 cv2.putText(img, id, pos, cv2.FONT_HERSHEY_COMPLEX,
                             3, (255, 0, 0))
         cv2.imshow("img", img)
-        key = cv2.waitKey(27)
+        key = cv2.waitKey(0)
         if key == 27:
             break
-
     cap.release()
     cv2.destroyAllWindows()
