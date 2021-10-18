@@ -44,15 +44,13 @@ class EuclideanDistanceTracker:
         for id, ptx in self.final_dict_copy.items():
             after = self.final_dict[id]
             if after == ptx:
-                #print(f"Vehicle {id} took {after[2]} Frame")
                 time = (after[2]/29.7)/3600
                 speed = round((10/1000)/time)
                 text = f"{speed} Km/hr"
                 print(f"Speed of the vehicle {id}: {speed:>2f}")
                 cv2.putText(img, text, (ptx[0], ptx[1]),
-                            cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 0))
+                            cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 255))
                 self.final_dict.pop(id)
-        # print(self.final_dict)
         self.final_dict_copy = self.final_dict.copy()
         self.center_dict = new_center_point.copy()
 

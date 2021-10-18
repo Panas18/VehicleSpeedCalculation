@@ -25,11 +25,6 @@ def create_lines(img, roi):
     cv2.line(img, (x3, y2), (x4, y2), (0, 255, 0))
 
 
-def calculate_fps(new_frame_time, prev_frame_time):
-    # print(f"FPS: {fps}")
-    return new_frame_time, prev_frame_time
-
-
 def bounding_box(fgmask, img):
     centers = []
     contours, _ = cv2.findContours(
@@ -50,7 +45,6 @@ def roi_calc(img, roi, centers):
     inside_roi = []
     for center in centers:
         if (center[1] >= y1 and center[1] <= y2) and (center[0] >= x3 and center[0] <= x4):
-            #cv2.circle((img), center, 5, (255, 0, 0), cv2.FILLED)
             inside_roi.append(center)
     return inside_roi
 
@@ -65,18 +59,9 @@ if __name__ == "__main__":
         if type(img) == type(None):
             break
         fgmask = background_sub(img, KERNEL, FGBG)
-        #cv2.imshow("fgmask", fgmask)
-        #create_lines(img, ROI)
         centers = bounding_box(fgmask, img)
         roi_centers = roi_calc(img, ROI, centers)
         center_ids = tracker.update(roi_centers, img)
-        # if center_ids:
-        #    # print(center_ids)
-        #    for center_id in center_ids:
-        #        pos = (center_id[0], center_id[1])
-        #        id = str(center_id[2])
-        #        cv2.putText(img, id, pos, cv2.FONT_HERSHEY_COMPLEX,
-        #                    3, (255, 0, 0))
         cv2.imshow("img", img)
 
         """ 
@@ -88,7 +73,6 @@ if __name__ == "__main__":
             diff = REQ_TIME - time_taken
             time.sleep(diff)
         final_time = time.time()
-        #print(f"fps:{1/(final_time- prev_frame_time)}")
         fps_list.append(1/(final_time - prev_frame_time))
         key = cv2.waitKey(0)
         if key == 27:
